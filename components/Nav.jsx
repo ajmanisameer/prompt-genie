@@ -77,7 +77,7 @@ function Nav() {
               width={37}
               height={37}
               className="rounded-full"
-              src="/assets/images/logo.svg"
+              src={session?.user.image}
               onClick={() => setToggleDropdown((prevState) => !prevState)}
             />
 
