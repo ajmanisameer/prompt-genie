@@ -1,7 +1,8 @@
 import NextAuth from "next-auth/next";
 import GoogleProvider from "next-auth/providers/google";
-import { connectToDB } from "@utils/database";
+
 import User from "@models/user";
+import { connectToDB } from "@utils/database";
 
 const handler = NextAuth({
   providers: [
@@ -10,38 +11,42 @@ const handler = NextAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     }),
   ],
-  async session({ session }) {
-    const sessionUser = await User.findOne({
-      email: session.user.email,
-    });
+  callbacks: {
+    async session({ session }) {
 
-    session.user.id = sessionUser._id.toSting();
-
-    return session;
-  },
-  async signIn({ profile }) {
-    try {
-      await connectToDB();
-      //cehcl if user exist
-      const userExist = await User.findOne({
-        email: profile.email,
+     // store the user id from MongoDB to session
+      const sessionUser = await User.findOne({
+        email: session.user.email,
       });
 
-      if (!userExist) {
-        await User.create({
+      session.user.id = sessionUser._id.toString();
+
+      return session;
+    },
+    async signIn({ profile }) {
+      try {
+        await connectToDB();
+        //cehcl if user exist
+        const userExist = await User.findOne({
           email: profile.email,
-          username: profile.name.replace(" ", "").toLowerCase(),
-          image: profile.picure,
         });
+
+        if (!userExist) {
+          await User.create({
+            email: profile.email,
+            username: profile.name.replace(" ", "").toLowerCase(),
+            image: profile.picure,
+          });
+        }
+
+        //if not create one
+
+        return true;
+      } catch (error) {
+        console.log(error);
+        return false;
       }
-
-      //if not create one
-
-      return true;
-    } catch (error) {
-      console.log(error);
-      return false;
-    }
+    },
   },
 });
 
